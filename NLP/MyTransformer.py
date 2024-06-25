@@ -89,19 +89,19 @@ class TransformerDecoder(tf.keras.layers.Layer):
 
 @tf.keras.saving.register_keras_serializable()
 class Transformer(tf.keras.Model):
-    def __init__(self, vocab_size, seq_length):
+    def __init__(self, vocab_size, seq_length, embed_dim=128, dense_dim=128, num_heads=4):
         super().__init__()
 
         self.start_code = 2
 
-        self.embed_dim = 128
-        self.dense_dim = 128
-        self.num_heads = 4
+        self.embed_dim = embed_dim
+        self.dense_dim = dense_dim
+        self.num_heads = num_heads
 
         self.vocab_size = vocab_size
 
         self.seq_in_length = seq_length
-        self.seq_out_length = seq_length
+        self.seq_out_length = seq_length - 1
 
         # encoder
         self.encoder_positional_embedding = PositionalEmbedding(self.seq_in_length, self.vocab_size, self.embed_dim)
