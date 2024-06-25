@@ -52,13 +52,13 @@ class TransformerDecoder(tf.keras.layers.Layer):
                 tf.keras.layers.Dense(embed_dim),
             ]
         )
-        self.layernorm_1 = tf.keras.layers.LayerNormalization()
-        self.layernorm_2 = tf.keras.layers.LayerNormalization()
-        self.layernorm_3 = tf.keras.layers.LayerNormalization()
+        self.layer_normalization_1 = tf.keras.layers.LayerNormalization()
+        self.layer_normalization_2 = tf.keras.layers.LayerNormalization()
+        self.layer_normalization_3 = tf.keras.layers.LayerNormalization()
         self.supports_masking = True
 
     def call(self, inputs, encoder_outputs, mask=None):
-        causal_mask = self.get_causal_attention_mask()
+        causal_mask = self.get_causal_attention_mask(inputs)
         # causal_mask = None
 
         if mask is not None:
@@ -68,16 +68,15 @@ class TransformerDecoder(tf.keras.layers.Layer):
             padding_mask = None
 
         attention_output_1 = self.attention_1(query=inputs, value=inputs, key=inputs, attention_mask=causal_mask)
-        out_1 = self.layernorm_1(inputs + attention_output_1)
+        out_1 = self.layer_normalization_1(inputs + attention_output_1)
 
         attention_output_2 = self.attention_2(query=out_1, value=encoder_outputs, key=encoder_outputs, attention_mask=padding_mask)
-        out_2 = self.layernorm_2(out_1 + attention_output_2)
+        out_2 = self.layer_normalization_2(out_1 + attention_output_2)
 
         proj_output = self.dense_proj(out_2)
-        return self.layernorm_3(out_2 + proj_output)
+        return self.layer_normalization_3(out_2 + proj_output)
 
-    @staticmethod
-    def get_causal_attention_mask(inputs):
+    def get_causal_attention_mask(self, inputs):
         input_shape = tf.shape(inputs)
         batch_size, sequence_length = input_shape[0], input_shape[1]
         i = tf.range(sequence_length)[:, None]
@@ -90,19 +89,19 @@ class TransformerDecoder(tf.keras.layers.Layer):
 
 @tf.keras.saving.register_keras_serializable()
 class Transformer(tf.keras.Model):
-    def __init__(self, vocab_size):
+    def __init__(self, vocab_size, seq_length):
         super().__init__()
 
         self.start_code = 2
 
-        self.embed_dim = 64
-        self.dense_dim = 64
-        self.num_heads = 2
+        self.embed_dim = 128
+        self.dense_dim = 128
+        self.num_heads = 4
 
         self.vocab_size = vocab_size
 
-        self.seq_in_length = 28
-        self.seq_out_length = 27
+        self.seq_in_length = seq_length
+        self.seq_out_length = seq_length
 
         # encoder
         self.encoder_positional_embedding = PositionalEmbedding(self.seq_in_length, self.vocab_size, self.embed_dim)
